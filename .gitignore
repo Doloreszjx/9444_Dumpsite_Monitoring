@@ -1,0 +1,4 @@
+dumpsite_data/
+VOC2012/
+__pycache__/
+.DS_Store
