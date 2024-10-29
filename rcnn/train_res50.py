@@ -61,7 +61,15 @@ for epoch in range(num_epochs):
         losses.backward()
         optimizer.step()
 
+
     # 更新学习率
     lr_scheduler.step()
 
     print(f"Epoch: {epoch}, Loss: {losses.item()}")
+    save_files = {
+      'model': model.state_dict(),
+      'optimizer': optimizer.state_dict(),
+      'lr_scheduler': lr_scheduler.state_dict(),
+      'epoch': epoch}
+
+    torch.save(save_files, "rcnn/save_weights/resNetFpn-model-{}.pth".format(epoch))
