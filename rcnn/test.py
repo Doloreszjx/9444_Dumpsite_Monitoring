@@ -33,5 +33,5 @@ class CustomDataset(Dataset):
     return len(self.images)
 
 # demo
-dataset = CustomDataset(image_dir='../data/images', annotation_dir='../data/annotations', transform=ToTensor())
-data_loader = DataLoader(dataset, batch_size=2, shuffle=True, num_workers=4, collate_fn=lambda x: tuple(zip(*x)))
+# dataset = CustomDataset(image_dir='/Users/xk/Desktop/unsw/9444/9444_Dumpsite_Monitoring/VOC2012/train/JPEGImages', annotation_dir='/Users/xk/Desktop/unsw/9444/9444_Dumpsite_Monitoring/VOC2012/train/Annotations', transform=ToTensor())
+# data_loader = DataLoader(dataset, batch_size=2, shuffle=True, num_workers=4, collate_fn=lambda x: tuple(zip(*x)))
