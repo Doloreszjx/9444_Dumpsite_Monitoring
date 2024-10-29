@@ -2,7 +2,7 @@ import os
 import datetime
 import torch
 
-from rcnn.dataset import VOCDataset
+from dataset import VOCDataset
 # from backbone import resnet50_fpn_backbone
 import config
 import torchvision.transforms as transforms
