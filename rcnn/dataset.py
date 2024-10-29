@@ -30,7 +30,7 @@ class VOCDataset(Dataset):
 
   def __getitem__(self, idx):
     xml_path = self.xml_lists[idx]
-    with open(xml_path) as read:
+    with open(xml_path, encoding='utf-8') as read:
       xml_str = read.read()
     xml = etree.fromstring(xml_str)
     data = self.parse_xml_to_dict(xml)['annotation']
