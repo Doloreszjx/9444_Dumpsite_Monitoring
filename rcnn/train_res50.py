@@ -8,6 +8,7 @@ import config
 import torchvision.transforms as transforms
 import torchvision
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
+from timer import Timer
 
 
 default_config = config.DefaultConfig()
@@ -23,7 +24,7 @@ transform = transforms.Compose([
 ])
 # transform = None
 train_data_set = VOCDataset('VOC2012', transform=transform, train=True)
-data_loader = torch.utils.data.DataLoader(train_data_set, batch_size=4, shuffle=True, collate_fn=lambda x: tuple(zip(*x)))
+data_loader = torch.utils.data.DataLoader(train_data_set, batch_size=8, shuffle=True, collate_fn=lambda x: tuple(zip(*x)))
 
 # 加载预训练的 Faster R-CNN 模型
 model = torchvision.models.detection.fasterrcnn_resnet50_fpn(pretrained=True)
@@ -42,11 +43,13 @@ optimizer = torch.optim.SGD(params, lr=0.005, momentum=0.9, weight_decay=0.0005)
 lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=3, gamma=0.1)
 
 # 训练模型
-num_epochs = 20
+num_epochs = 15
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('mps') if torch.backends.mps.is_available() else torch.device('cpu')
 model.to(device)
+timer = Timer()
 
 for epoch in range(num_epochs):
+    timer.start()
     model.train()
     for images, targets in data_loader:
         images = list(image.to(device) for image in images)
@@ -64,8 +67,8 @@ for epoch in range(num_epochs):
 
     # 更新学习率
     lr_scheduler.step()
-
-    print(f"Epoch: {epoch}, Loss: {losses.item()}")
+    timer.end()
+    print(f"Epoch: {epoch}, Loss: {losses.item()}, takes: {timer}")
     save_files = {
       'model': model.state_dict(),
       'optimizer': optimizer.state_dict(),
