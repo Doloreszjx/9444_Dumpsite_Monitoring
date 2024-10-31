@@ -4,15 +4,16 @@ import torch
 import torchvision
 import numpy as np
 from tqdm import tqdm
+import config
 
-
+default_config = config.DefaultConfig()
 # 设置测试数据的 transforms
 transform = T.Compose([
     T.ToTensor()
 ])
 
 # 加载测试数据集
-test_dataset = VOCDataset('VOC2012', transform=transform, train=True)
+test_dataset = VOCDataset(default_config.voc_root, transform=transform, train=False)
 test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=8, shuffle=True, collate_fn=lambda x: tuple(zip(*x)))
 
 # 加载 Faster R-CNN 模型
@@ -22,7 +23,7 @@ in_features = model.roi_heads.box_predictor.cls_score.in_features
 model.roi_heads.box_predictor = torchvision.models.detection.faster_rcnn.FastRCNNPredictor(in_features, num_classes)
 
 # 加载训练好的模型参数
-model.load_state_dict(torch.load('rcnn/save_weights/resNetFpn-model-19.pth',  map_location=torch.device('cpu'))['model'])
+model.load_state_dict(torch.load('rcnn/save_weights/weights_old/resNetFpn-model-19.pth')['model'])
 # model.eval()
 
 def compute_iou(box1, box2):
@@ -41,14 +42,19 @@ def compute_iou(box1, box2):
     return iou
 
 def evaluate_model(model, test_loader, iou_threshold=0.5):
+    device = torch.device('cuda') if torch.cuda.is_available() else torch.device('mps') if torch.backends.mps.is_available() else torch.device('cpu')
+    model.to(device)
     model.eval()
+    
     true_positives, false_positives, false_negatives = 0, 0, 0
-    device = 'cpu'
-    # device = torch.device('cuda') if torch.cuda.is_available() else torch.device('mps') if torch.backends.mps.is_available() else torch.device('cpu')
+    # device = 'cpu'
+    
+    print(f'Using device {device}')
     for images, targets in tqdm(test_loader):
         images = [img.to(device) for img in images]
         outputs = model(images)
         iou_list = []
+        # print(targets)
 
         for output, target in zip(outputs, targets):
             pred_boxes = output['boxes'].cpu().detach().numpy()
