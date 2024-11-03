@@ -5,7 +5,7 @@ import torch
 from dataset import VOCDataset
 # from backbone import resnet50_fpn_backbone
 import config
-import torchvision.transforms as transforms
+import transforms
 import torchvision
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 from timer import Timer
@@ -19,11 +19,10 @@ default_config = config.DefaultConfig()
 #   backbone = resnet50_fpn_backbone(pretrain_path= default_config.backbone_path + 'resnet50.pth', trainable_layers=3)
 
 #   return model
-transform = transforms.Compose([
-    transforms.ToTensor(),  # 转换为张量
-])
+transforms = transforms.Compose([transforms.ToTensor(),
+                                     transforms.RandomHorizontalFlip(0.5)])
 # transform = None
-train_data_set = VOCDataset('VOC2012', transform=transform, train=True)
+train_data_set = VOCDataset(default_config.voc_root, transforms=transforms, train=True)
 data_loader = torch.utils.data.DataLoader(train_data_set, batch_size=8, shuffle=True, collate_fn=lambda x: tuple(zip(*x)))
 
 # 加载预训练的 Faster R-CNN 模型
@@ -43,7 +42,7 @@ optimizer = torch.optim.SGD(params, lr=0.005, momentum=0.9, weight_decay=0.0005)
 lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=3, gamma=0.1)
 
 # 训练模型
-num_epochs = 15
+num_epochs = 20
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('mps') if torch.backends.mps.is_available() else torch.device('cpu')
 model.to(device)
 timer = Timer()
@@ -75,4 +74,4 @@ for epoch in range(num_epochs):
       'lr_scheduler': lr_scheduler.state_dict(),
       'epoch': epoch}
 
-    torch.save(save_files, "rcnn/save_weights/resNetFpn-model-{}.pth".format(epoch))
+    torch.save(save_files, "rcnn/save_weights/resNetFpn-model-balanced-{}.pth".format(epoch))

@@ -1,5 +1,5 @@
 from dataset import VOCDataset
-import torchvision.transforms as T
+import transforms
 import torch
 import torchvision
 import numpy as np
@@ -8,12 +8,11 @@ import config
 
 default_config = config.DefaultConfig()
 # 设置测试数据的 transforms
-transform = T.Compose([
-    T.ToTensor()
-])
+transforms = transforms.Compose([transforms.ToTensor(),
+                                     transforms.RandomHorizontalFlip(0.5)])
 
 # 加载测试数据集
-test_dataset = VOCDataset(default_config.voc_root, transform=transform, train=False)
+test_dataset = VOCDataset(default_config.voc_root, transforms=transforms, train=False)
 test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=8, shuffle=True, collate_fn=lambda x: tuple(zip(*x)))
 
 # 加载 Faster R-CNN 模型
@@ -23,7 +22,7 @@ in_features = model.roi_heads.box_predictor.cls_score.in_features
 model.roi_heads.box_predictor = torchvision.models.detection.faster_rcnn.FastRCNNPredictor(in_features, num_classes)
 
 # 加载训练好的模型参数
-model.load_state_dict(torch.load('rcnn/save_weights/weights_old/resNetFpn-model-19.pth')['model'])
+model.load_state_dict(torch.load('rcnn/save_weights/resNetFpn-model-balanced-19.pth')['model'])
 # model.eval()
 
 def compute_iou(box1, box2):

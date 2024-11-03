@@ -6,7 +6,7 @@ from lxml import etree
 from PIL import Image
 
 class VOCDataset(Dataset):
-  def __init__(self, voc_root, transform=None, train=True):
+  def __init__(self, voc_root, transforms=None, train=True):
     if train:
       self.root = os.path.join(voc_root, 'train')
       txt_file = os.path.join(self.root, 'train.txt')
@@ -15,11 +15,12 @@ class VOCDataset(Dataset):
       txt_file = os.path.join(self.root, 'test.txt')
     self.image_dir = os.path.join(self.root, 'JPEGImages')
     self.annotation_dir = os.path.join(self.root, 'Annotations')
-    self.transform = transform
+    self.transforms = transforms
 
-    with open(txt_file) as read:
+    with open(txt_file, encoding='utf-8') as read:
+      file_lists = [os.path.join(self.annotation_dir, line.strip()) for line in read.readlines()]
       self.xml_lists = [os.path.join(self.annotation_dir, line.strip() + '.xml') for line in read.readlines()]
-    with open(txt_file) as read:  
+    with open(txt_file, encoding='utf-8') as read:  
       self.jpg_lists = [os.path.join(self.image_dir, line.strip() + '.jpg') for line in read.readlines()]
     self.class_dict = config.DefaultConfig().classes
 
@@ -32,7 +33,7 @@ class VOCDataset(Dataset):
     xml_path = self.xml_lists[idx]
     with open(xml_path, encoding='utf-8') as read:
       xml_str = read.read()
-    xml = etree.fromstring(xml_str)
+    xml = etree.fromstring(xml_str.encode('utf-8'))
     data = self.parse_xml_to_dict(xml)['annotation']
     # print(data)
     # img_path = os.path.join(self.image_dir, data['filename'])
@@ -42,15 +43,39 @@ class VOCDataset(Dataset):
     boxes = []
     labels = []
     iscrowd = []
-    for obj in data['object']:
-      bbox = obj['bndbox']
-      xmin = float(bbox['xmin'])
-      ymin = float(bbox['ymin'])
-      xmax = float(bbox['xmax'])
-      ymax = float(bbox['ymax'])
-      boxes.append([xmin, ymin, xmax, ymax])
-      labels.append(self.class_dict[obj['name']])
-      iscrowd.append(int(obj['difficult']))
+
+    if 'object' in data:
+      for obj in data["object"]:
+        xmin = float(obj["bndbox"]["xmin"])
+        xmax = float(obj["bndbox"]["xmax"])
+        ymin = float(obj["bndbox"]["ymin"])
+        ymax = float(obj["bndbox"]["ymax"])
+
+        # 进一步检查数据，有的标注信息中可能有w或h为0的情况，这样的数据会导致计算回归loss为nan
+        if xmax <= xmin or ymax <= ymin:
+            print("Warning: in '{}' xml, there are some bbox w/h <=0".format(xml_path))
+            continue
+        
+        boxes.append([xmin, ymin, xmax, ymax])
+        labels.append(self.class_dict[obj["name"]])
+        if "difficult" in obj:
+            iscrowd.append(int(obj["difficult"]))
+        else:
+            iscrowd.append(0)
+    else:
+      target = {}
+      target['boxes'] = torch.as_tensor([], dtype=torch.float32)
+      target['labels'] = torch.as_tensor([], dtype=torch.int64)
+      target['image_id'] = torch.tensor([idx])
+      target['area'] = []
+      target['iscrowd'] = []
+      if self.transforms is not None:
+        image, target = self.transforms(image, None)
+      return image, {}
+
+
+    
+    
     
     boxes = torch.as_tensor(boxes, dtype=torch.float32)
     labels = torch.as_tensor(labels, dtype=torch.int64)
@@ -65,8 +90,8 @@ class VOCDataset(Dataset):
     target['area'] = area
     target['iscrowd'] = iscrowd
 
-    if self.transform is not None:
-      image = self.transform(image)
+    if self.transforms is not None:
+      image, target = self.transforms(image, target)
 
     return image, target
 
@@ -74,7 +99,7 @@ class VOCDataset(Dataset):
     xml_path = self.xml_lists[idx]
     with open(xml_path) as read:
       xml_str = read.read()
-    xml = etree.fromstring(xml_str)
+    xml = etree.fromstring(xml_str.encode('utf-8'))
     data = self.parse_xml_to_dict(xml)['annotation']
     data_height = int(data['size']['height'])
     data_width = int(data['size']['width'])
