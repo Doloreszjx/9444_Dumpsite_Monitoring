@@ -22,7 +22,7 @@ in_features = model.roi_heads.box_predictor.cls_score.in_features
 model.roi_heads.box_predictor = torchvision.models.detection.faster_rcnn.FastRCNNPredictor(in_features, num_classes)
 
 # 加载训练好的模型参数
-model.load_state_dict(torch.load('rcnn/save_weights/resNetFpn-model-balanced-19.pth')['model'])
+model.load_state_dict(torch.load('rcnn/save_weights/resNetFpn-model-balanced-7.pth')['model'])
 # model.eval()
 
 def compute_iou(box1, box2):

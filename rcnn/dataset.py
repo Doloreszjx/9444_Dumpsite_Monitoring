@@ -18,10 +18,21 @@ class VOCDataset(Dataset):
     self.transforms = transforms
 
     with open(txt_file, encoding='utf-8') as read:
-      file_lists = [os.path.join(self.annotation_dir, line.strip()) for line in read.readlines()]
-      self.xml_lists = [os.path.join(self.annotation_dir, line.strip() + '.xml') for line in read.readlines()]
-    with open(txt_file, encoding='utf-8') as read:  
-      self.jpg_lists = [os.path.join(self.image_dir, line.strip() + '.jpg') for line in read.readlines()]
+      file_lists = [line.strip() for line in read.readlines()]
+      self.xml_lists = []
+      self.jpg_lists = []
+      for file in file_lists:
+        xml_path = os.path.join(self.annotation_dir, file + '.xml')
+        with open(xml_path, encoding='utf-8') as read:
+          xml_str = read.read()
+          xml = etree.fromstring(xml_str.encode('utf-8'))
+        data = self.parse_xml_to_dict(xml)['annotation']
+        if 'object' in data:
+          self.xml_lists.append(xml_path)
+          self.jpg_lists.append(os.path.join(self.image_dir, file + '.jpg'))
+      # self.xml_lists = [os.path.join(self.annotation_dir, line.strip() + '.xml') for line in read.readlines()]
+    # with open(txt_file, encoding='utf-8') as read:  
+    #   self.jpg_lists = [os.path.join(self.image_dir, line.strip() + '.jpg') for line in read.readlines()]
     self.class_dict = config.DefaultConfig().classes
 
 
@@ -44,34 +55,25 @@ class VOCDataset(Dataset):
     labels = []
     iscrowd = []
 
-    if 'object' in data:
-      for obj in data["object"]:
-        xmin = float(obj["bndbox"]["xmin"])
-        xmax = float(obj["bndbox"]["xmax"])
-        ymin = float(obj["bndbox"]["ymin"])
-        ymax = float(obj["bndbox"]["ymax"])
+    
+    for obj in data["object"]:
+      xmin = float(obj["bndbox"]["xmin"])
+      xmax = float(obj["bndbox"]["xmax"])
+      ymin = float(obj["bndbox"]["ymin"])
+      ymax = float(obj["bndbox"]["ymax"])
 
-        # 进一步检查数据，有的标注信息中可能有w或h为0的情况，这样的数据会导致计算回归loss为nan
-        if xmax <= xmin or ymax <= ymin:
-            print("Warning: in '{}' xml, there are some bbox w/h <=0".format(xml_path))
-            continue
-        
-        boxes.append([xmin, ymin, xmax, ymax])
-        labels.append(self.class_dict[obj["name"]])
-        if "difficult" in obj:
-            iscrowd.append(int(obj["difficult"]))
-        else:
-            iscrowd.append(0)
-    else:
-      target = {}
-      target['boxes'] = torch.as_tensor([], dtype=torch.float32)
-      target['labels'] = torch.as_tensor([], dtype=torch.int64)
-      target['image_id'] = torch.tensor([idx])
-      target['area'] = []
-      target['iscrowd'] = []
-      if self.transforms is not None:
-        image, target = self.transforms(image, None)
-      return image, {}
+      # 进一步检查数据，有的标注信息中可能有w或h为0的情况，这样的数据会导致计算回归loss为nan
+      if xmax <= xmin or ymax <= ymin:
+          print("Warning: in '{}' xml, there are some bbox w/h <=0".format(xml_path))
+          continue
+      
+      boxes.append([xmin, ymin, xmax, ymax])
+      labels.append(self.class_dict[obj["name"]])
+      if "difficult" in obj:
+          iscrowd.append(int(obj["difficult"]))
+      else:
+          iscrowd.append(0)
+
 
 
     
