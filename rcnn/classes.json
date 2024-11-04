@@ -1,8 +1,7 @@
 {
-  "industry waste": 1, 
-  "domestic garbage": 2,
-  "construction waste": 3,
-  "mining waste": 4,
-  "agriculture forestry": 5,
-  "disposed garbage": 6
+
+  "domestic garbage": 1,
+  "construction waste": 2,
+  "agriculture forestry": 3,
+  "disposed garbage": 4
 }
