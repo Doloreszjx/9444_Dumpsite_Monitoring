@@ -7,7 +7,7 @@ from dataset import VOCDataset
 import config
 import transforms
 import torchvision
-from torchvision.models.detection.faster_rcnn import FastRCNNPredictor, FasterRCNN_ResNet50_FPN_Weights
+from torchvision.models.detection.faster_rcnn import FastRCNNPredictor, FasterRCNN_MobileNet_V3_Large_320_FPN_Weights
 from timer import Timer
 
 
@@ -19,14 +19,14 @@ default_config = config.DefaultConfig()
 #   backbone = resnet50_fpn_backbone(pretrain_path= default_config.backbone_path + 'resnet50.pth', trainable_layers=3)
 
 #   return model
-transforms = transforms.Compose([transforms.ToTensor(), transforms.RandomHorizontalFlip(0.5), transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
+transforms = transforms.Compose([transforms.ToTensor(), transforms.RandomHorizontalFlip(0.5)])
 # transform = None
 train_data_set = VOCDataset(default_config.voc_root, transforms=transforms, train=True)
 data_loader = torch.utils.data.DataLoader(train_data_set, batch_size=8, shuffle=True, collate_fn=lambda x: tuple(zip(*x)))
 
 # 加载预训练的 Faster R-CNN 模型
 # torchvision.models.detection.fasterrcnn
-model = torchvision.models.detection.fasterrcnn_resnet50_fpn(weights=FasterRCNN_ResNet50_FPN_Weights.DEFAULT)
+model = torchvision.models.detection.fasterrcnn_mobilenet_v3_large_320_fpn(weights=FasterRCNN_MobileNet_V3_Large_320_FPN_Weights.DEFAULT)
 
 # 获取输入特征的数量
 in_features = model.roi_heads.box_predictor.cls_score.in_features
@@ -42,7 +42,7 @@ optimizer = torch.optim.SGD(params, lr=0.005, momentum=0.9, weight_decay=0.0005)
 lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=3, gamma=0.1)
 
 # 训练模型
-num_epochs = 5
+num_epochs = 20
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('mps') if torch.backends.mps.is_available() else torch.device('cpu')
 model.to(device)
 timer = Timer()
@@ -74,4 +74,4 @@ for epoch in range(num_epochs):
       'lr_scheduler': lr_scheduler.state_dict(),
       'epoch': epoch}
 
-    torch.save(save_files, "rcnn/save_weights/resNetFpn-model-balanced-{}.pth".format(epoch))
+    torch.save(save_files, "rcnn/save_weights/mobileNetFpn-model-balanced-{}.pth".format(epoch))

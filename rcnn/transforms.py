@@ -34,3 +34,13 @@ class RandomHorizontalFlip(object):
             bbox[:, [0, 2]] = width - bbox[:, [2, 0]]  # 翻转对应bbox坐标信息
             target["boxes"] = bbox
         return image, target
+
+class Normalize(object):
+    """归一化图像"""
+    def __init__(self, mean, std):
+        self.mean = mean
+        self.std = std
+
+    def __call__(self, image, target):
+        image = F.normalize(image, mean=self.mean, std=self.std)
+        return image, target
