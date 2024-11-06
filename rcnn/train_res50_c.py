@@ -94,7 +94,7 @@ def main(args):
 
     # load validation data set
     # VOCdevkit -> VOC2012 -> ImageSets -> Main -> val.txt
-    val_dataset = VOCDataset(os.path.join(config.DefaultConfig().voc_root, 'test'), "test.txt", data_transform["val"])
+    val_dataset = VOCDataset(os.path.join(config.DefaultConfig().voc_root, 'val'), "val.txt", data_transform["val"])
     val_data_set_loader = torch.utils.data.DataLoader(val_dataset,
                                                       batch_size=1,
                                                       shuffle=False,
@@ -169,7 +169,7 @@ def main(args):
             'epoch': epoch}
         if args.amp:
             save_files["scaler"] = scaler.state_dict()
-        torch.save(save_files, "rcnn/save_weights/resNetFpn-model-{}.pth".format(epoch))
+        torch.save(save_files, "rcnn/save_weights/resNetFpn-model-balanced-{}.pth".format(epoch))
 
     # plot loss and lr curve
     # if len(train_loss) != 0 and len(learning_rate) != 0:

@@ -49,7 +49,6 @@ class VOCDataset(Dataset):
     labels = []
     iscrowd = []
 
-    
     for obj in data["object"]:
       xmin = float(obj["bndbox"]["xmin"])
       xmax = float(obj["bndbox"]["xmax"])
@@ -67,7 +66,7 @@ class VOCDataset(Dataset):
           iscrowd.append(int(obj["difficult"]))
       else:
           iscrowd.append(0)
-
+    
     # print(boxes, labels)
 
     
@@ -77,7 +76,14 @@ class VOCDataset(Dataset):
     labels = torch.as_tensor(labels, dtype=torch.int64)
     iscrowd = torch.as_tensor(iscrowd, dtype=torch.int64)
     image_id = torch.tensor([idx])
-    area = (boxes[:, 3] - boxes[:, 1]) * (boxes[:, 2] - boxes[:, 0])
+    # print(boxes, labels)
+    try:
+
+      area = (boxes[:, 3] - boxes[:, 1]) * (boxes[:, 2] - boxes[:, 0])
+    except Exception as e:
+      print(e)
+      print(boxes)
+      print(xml_path)
 
     target = {}
     target['boxes'] = boxes
