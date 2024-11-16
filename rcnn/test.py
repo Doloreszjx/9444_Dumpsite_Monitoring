@@ -4,33 +4,35 @@ from PIL import Image
 import os
 import torch
 
-class CustomDataset(Dataset):
-  def __init__(self, image_dir, annotation_dir, transform=None):
-    self.image_dir = image_dir
-    self.annotation_dir = annotation_dir
-    self.transform = transform
-    self.images = os.listdir(image_dir)
+print(torch.cuda.is_available())
 
-  def __getitem__(self, index):
-    img_path = os.path.join(self.image_dir, self.images[index])
-    img = Image(img_path).convert('RGB')
+# class CustomDataset(Dataset):
+#   def __init__(self, image_dir, annotation_dir, transform=None):
+#     self.image_dir = image_dir
+#     self.annotation_dir = annotation_dir
+#     self.transform = transform
+#     self.images = os.listdir(image_dir)
 
-    annotation_path = os.path.join(self.annotation_dir, self.images[index].replace('.jpg', '.xml'))
+#   def __getitem__(self, index):
+#     img_path = os.path.join(self.image_dir, self.images[index])
+#     img = Image(img_path).convert('RGB')
 
-    boxes = []
-    labels = []
+#     annotation_path = os.path.join(self.annotation_dir, self.images[index].replace('.jpg', '.xml'))
 
-    taget = {
-      'boxes': torch.tensor(boxes, dtype=torch.float32),
-      'labels': torch.tensor(labels, dtype=torch.int64)
-    }
+#     boxes = []
+#     labels = []
 
-    if self.transform:
-      img, target = self.transform(img, target)
+#     taget = {
+#       'boxes': torch.tensor(boxes, dtype=torch.float32),
+#       'labels': torch.tensor(labels, dtype=torch.int64)
+#     }
+
+#     if self.transform:
+#       img, target = self.transform(img, target)
     
-    return img, target
-  def __len__(self):
-    return len(self.images)
+#     return img, target
+#   def __len__(self):
+#     return len(self.images)
 
 # demo
 # dataset = CustomDataset(image_dir='/Users/xk/Desktop/unsw/9444/9444_Dumpsite_Monitoring/VOC2012/train/JPEGImages', annotation_dir='/Users/xk/Desktop/unsw/9444/9444_Dumpsite_Monitoring/VOC2012/train/Annotations', transform=ToTensor())
