@@ -105,7 +105,7 @@ def main(parser_data):
 
     category_index = {v: k for k, v in class_dict.items()}
 
-    VOC_root = 'VOC2012/test'
+    VOC_root = 'new_dumpsite_data/test'
     # check voc root
     # if os.path.exists(os.path.join(VOC_root, "VOCdevkit")) is False:
     #     raise FileNotFoundError("VOCdevkit dose not in path:'{}'.".format(VOC_root))
@@ -130,7 +130,7 @@ def main(parser_data):
     model = FasterRCNN(backbone=backbone, num_classes=parser_data.num_classes + 1)
 
     # 载入你自己训练好的模型权重
-    weights_path = 'rcnn/save_weights/old_weights/resNetFpn-model.pth'
+    weights_path = 'rcnn/save_weights/resNetFpn-model-balanced-5.pth'
     assert os.path.exists(weights_path), "not found {} file.".format(weights_path)
     weights_dict = torch.load(weights_path, map_location='cpu')
     weights_dict = weights_dict["model"] if "model" in weights_dict else weights_dict
