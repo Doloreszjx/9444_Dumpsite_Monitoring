@@ -19,11 +19,24 @@ from torchvision.ops import box_iou
 from train_utils import get_coco_api_from_dataset, CocoEvaluator
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
-# from pycocotools.cocoeval import COCO
+from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
+from torchvision.models.detection import FasterRCNN
+from torchvision.models.detection.backbone_utils import resnet_fpn_backbone
 
 
+def create_res101_model(num_classes):
 
+  backbone = resnet_fpn_backbone('resnet101', weights=None)
+  model = FasterRCNN(backbone, num_classes=91)
 
+  # get number of input features for the classifier
+  # model = torchvision.models.detection.fasterrcnn_resnet50_fpn(weights=FasterRCNN_ResNet50_FPN_Weights.DEFAULT)
+
+  in_features = model.roi_heads.box_predictor.cls_score.in_features
+  # # replace the pre-trained head with a new one
+  model.roi_heads.box_predictor = FastRCNNPredictor(in_features, num_classes)
+
+  return model
 
 def summarize(self, catId=None):
     """
@@ -168,35 +181,6 @@ def visualize_sample(image, boxes, labels, label_map, file_name):
 #         label_text = f"{class_names[label]}: {score:.2f}"
 #         cv2.putText(image, label_text, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 #     return image
-def calculate_map_iou(coco_evaluator, label_name):
-    coco_eval = coco_evaluator.coco_eval["bbox"]
-    coco_eval.summarize()
-    cat_ids = coco_eval.params.catIds
-    category_map = {}
-    for idx, cat_id in enumerate(cat_ids):
-        _, cat_name = coco_eval.coco_gt.loadCats(cat_id)[0].values()
-        category_map[cat_id] = cat_name
-    
-    map_50 = coco_eval.stats[1]
-    map_50_95 = coco_eval.stats[0]
-    print(f"mAP@50: {map_50:.3f}")
-    print(f"mAP@50:95: {map_50_95:.3f}")
-    
-    per_class_map = {}
-    per_class_iou = {}
-    for cat_id in cat_ids:
-        cat_index = coco_eval.params.catIds.index(cat_id)
-        cat_map = coco_eval.eval['precision'][:, :, cat_index, 0, 2]
-        cat_map_50 = np.mean(cat_map[0][cat_map[0] > -1]) if cat_map[0].sum() != 0 else 0
-        cat_map_all = np.mean(cat_map[cat_map > -1]) if cat_map.sum() != 0 else 0
-        per_class_map[category_map[cat_id]] = (cat_map_50, cat_map_all)
-        ious = coco_eval.eval['ious']
-        cat_iou = np.mean(ious[cat_id]) if cat_id in ious else -1
-        per_class_iou[category_map[cat_id]] = cat_iou
-    
-    print("Per-class metrics:")
-    for cat, metrics in per_class_map.items():
-        print(f"{label_name[cat]}: mAP@50 = {metrics[0]:.3f}, mAP@50:95 = {metrics[1]:.3f}, mIoU = {per_class_iou[cat]:.3f}")
 def compute_iou(box1, box2):
 
     x1, y1, x2, y2 = box1
@@ -253,7 +237,7 @@ def main(parser_data):
     # 注意，这里的norm_layer要和训练脚本中保持一致
     # backbone = resnet50_fpn_backbone(norm_layer=torch.nn.BatchNorm2d)
     # model = FasterRCNN(backbone=backbone, num_classes=parser_data.num_classes + 1)
-    model = torchvision.models.detection.fasterrcnn_resnet50_fpn(weights=None, num_classes=parser_data.num_classes + 1)
+    model = create_res101_model(5)
     num_classes = parser_data.num_classes
     iou_sum = np.zeros(parser_data.num_classes)
     iou_count = np.zeros(parser_data.num_classes)
@@ -262,7 +246,7 @@ def main(parser_data):
     fn_sum = np.zeros(num_classes)
 
     # 载入你自己训练好的模型权重
-    weights_path = 'rcnn/save_weights/resNetFpn-model-origin-14.pth'
+    weights_path = 'rcnn/save_weights/resNet101Fpn-model-9.pth'
     assert os.path.exists(weights_path), "not found {} file.".format(weights_path)
     weights_dict = torch.load(weights_path)
     weights_dict = weights_dict["model"] if "model" in weights_dict else weights_dict
@@ -371,8 +355,6 @@ def main(parser_data):
     coco_evaluator.summarize()
 
     coco_eval = coco_evaluator.coco_eval["bbox"]
-    coco_evaluator.calculate_metrics()
-    # calculate_map_iou(coco_evaluator, label_name)
 
     # 计算所有类别的 mIoU
     for label, metrics in results.items():
